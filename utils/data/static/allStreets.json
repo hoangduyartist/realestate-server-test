@@ -1,0 +1,13 @@
+{
+  "test": {
+    "param1": "abc"
+  },
+  "streets": [
+    {
+      "name": "Phan Trọng Tuệ",
+      "wardIds": [
+        "40106"
+      ]
+    }
+  ]
+}
