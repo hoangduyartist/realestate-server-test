@@ -80,6 +80,12 @@ const GetLocations = async (req, res) => {
     })
   }
 }
+
+const createRawText = (txt) => {
+  if (!txt) return [];
+  const raws = [txt, utf8ToNormalString(txt), utf8ToNormalString(txt, { trimAll: true })];
+  return raws;
+}
 const AddStaticStreet = async (req, res) => {
   // const { body, data } = req;
   const payload = req.body;
@@ -87,6 +93,7 @@ const AddStaticStreet = async (req, res) => {
   let wardIds = []
   const newStreet = {
     name: payload.name,
+    nameRaws: createRawText(payload.name),
     wardIds: [payload.wardId]
   }
   
@@ -99,16 +106,34 @@ const AddStaticStreet = async (req, res) => {
   // }
   // logStream.write(JSON.stringify(newData, null, 2));
   // logStream.end();
-  let streetsFileData = fs.readFileSync('./utils/data/static/allStreets.json', 'utf8');
-  let parse = JSON.parse(streetsFileData);
-  parse.streets.push(newStreet);
-  fs.writeFileSync('./utils/data/static/allStreets.json', JSON.stringify(parse, null, 2))
+  // console.log(JSON.stringify(null, null, 2));
+  let file1Path = './utils/data/static/allStreets.json';
+  let file2Path = './utils/data/static/streetByWard.json';
+  let streetsFileData = fs.readFileSync(file1Path, 'utf8');
+  let streetByWardFileData = fs.readFileSync(file2Path, 'utf8');
+  let file1Parser = JSON.parse(streetsFileData || '{}');
+  let file2Parser = JSON.parse(streetByWardFileData || '{}');
+  if (file1Parser.streets) {
+    file1Parser.streets.push(newStreet);
+  }
+  fs.writeFileSync(file1Path, JSON.stringify(file1Parser, null, 2))
+  if (file2Parser.wardId) {
+    console.log('IF')
+    if(!file2Parser.wardId[payload.wardId]) {
+      console.log('if 1')
+      file2Parser.wardId[payload.wardId] = [{...newStreet, wardIds: undefined}];
+    } else {
+      console.log('if 2')
+      file2Parser.wardId[payload.wardId].push({...newStreet, wardIds: undefined});
+    }
+  }
+  fs.writeFileSync(file2Path, JSON.stringify(file2Parser, null, 2))
 
   try {
     return res.status(200).json({
       status: 200,
       message: 'Get streets by ward',
-      data: { payload, streetsFileData: JSON.parse(streetsFileData) },
+      data: { payload, file2Parser },
     })
   } catch (error) {
     return res.status(500).json({
@@ -124,49 +149,47 @@ const GetStaticStreet = async (req, res) => {
   const { ward_id } = req.query;
 
   try {
-    let data = fs.readFileSync('./utils/data/static/street.tsv', 'utf8');
-    // \r\n40106-2\t40106\tTrịnh Công Sơn\tTrịnh Công Sơn,Trinh Cong Son\t40106,40107\t[40106,46017]
-    let dataFormat = data.replace(/(\r\n|\n|\r)/gm, "--|--");
-    const templines = dataFormat.split('--|--');
+    // let data = fs.readFileSync('./utils/data/static/street.tsv', 'utf8');
+    // // \r\n40106-2\t40106\tTrịnh Công Sơn\tTrịnh Công Sơn,Trinh Cong Son\t40106,40107\t[40106,46017]
+    // let dataFormat = data.replace(/(\r\n|\n|\r)/gm, "--|--");
+    // const templines = dataFormat.split('--|--');
+    // const ignoreHeadRaw = true;
 
-    const ignoreHeadRaw = true;
-
-    const streets = [];
-    for (let x = Number(ignoreHeadRaw); x < templines.length; x++) {
-      const property = templines[x].split('\t');
-      // templines[x] = property;
-      const fmSt = {
-        id: property[0],
-        name: property[1],
-        nameRaws: property[2],
-        wardIds: property[3]
-      }
-      //filter by ward
-      // console.log('before alo', fmSt.wardIds.includes(ward_id))
-      if (ward_id && fmSt.wardIds.includes(ward_id)) {
-        streets.push(fmSt);
-        continue
-      }
-      if (!ward_id)
-        streets.push(fmSt);
-    }
-
-    let originData = data;
-    // const newLineData = `\r\n40106-2\t40106\tTrịnh Công Sơn\tTrịnh Công Sơn,Trinh Cong Son\t40106,40107\t[40106,46017]`;
-    // fs.writeFileSync('./utils/data/static/street.tsv', newLineData, { 'flag': 'a' });
-
-    // let logStream = fs.createWriteStream('./utils/data/static/street.tsv', { flags: 'a' });
-    // // use {flags: 'a'} to append and {flags: 'w'} to erase and write a new file
-    // logStream.write(`\r\n40106-2\t40106\tTrịnh Công Sơn\tTrịnh Công Sơn,Trinh Cong Son\t40106,40107\t[40106,46017]`);
-    // logStream.end();
+    // for (let x = Number(ignoreHeadRaw); x < templines.length; x++) {
+    //   const property = templines[x].split('\t');
+    //   // templines[x] = property;
+    //   const fmSt = {
+    //     id: property[0],
+    //     name: property[1],
+    //     nameRaws: property[2],
+    //     wardIds: property[3]
+    //   }
+    //   //filter by ward
+    //   // console.log('before alo', fmSt.wardIds.includes(ward_id))
+    //   if (ward_id && fmSt.wardIds.includes(ward_id)) {
+    //     streets.push(fmSt);
+    //     continue
+    //   }
+    //   if (!ward_id)
+    //     streets.push(fmSt);
+    // }
+    let streets = [];
+    // let logStreamRead = fs.createReadStream('./utils/data/static/streetByWard.json');
+    // logStreamRead.on('data', chunk => {
+    //   // console.log(chunk.toString());
+    //   const parserData = JSON.parse(chunk.toString() || '{}');
+    //   console.log(parserData.wardId[ward_id]);
+    //   streets = parserData.wardId[ward_id];
+    // })
+    let streetByWardFileData = fs.readFileSync('./utils/data/static/streetByWard.json', 'utf8');
+    const parserData = JSON.parse(streetByWardFileData || '{}');
+    streets = parserData.wardId[ward_id];
 
     return res.status(200).json({
       status: 200,
       message: 'Get streets by ward',
       // data: { area, ward_id, templines, data1: data, dataFormat, results },
       data: { area, ward_id, streets },
-      // dataLength: rs?.data?.length,
-      // data: fmDataList,
     })
   } catch (error) {
     return res.status(500).json({

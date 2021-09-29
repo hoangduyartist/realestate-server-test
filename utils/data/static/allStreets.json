@@ -1,10 +1,12 @@
 {
-  "test": {
-    "param1": "abc"
-  },
   "streets": [
     {
       "name": "Phan Trọng Tuệ",
+      "nameRaws": [
+        "Phan Trọng Tuệ",
+        "phan trong tue",
+        "phantrongtue"
+      ],
       "wardIds": [
         "40106"
       ]

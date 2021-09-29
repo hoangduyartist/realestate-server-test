@@ -33,9 +33,19 @@ const request = async (url, options) => {
   }
 }
 
-const utf8ToNormalString = (text) => {
+const utf8ToNormalString = (text, options) => {
+  if (!text) return '';
   // Chuyển hết sang chữ thường
   let str = text.toLowerCase();
+  if (options && options.lowerCase === false) {
+    str = text;
+    // console.log('FUNC', str)
+  }
+  if (options && options.trimAll) {
+    // RegEx
+    // https://stackoverflow.com/questions/6623231/remove-all-white-spaces-from-text
+    str = str.replace(/ /g,'')
+  }
 
   // xóa dấu
   str = str.replace(/(à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ)/g, 'a');
